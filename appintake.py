@@ -1,111 +1,78 @@
 import streamlit as st
-import pandas as pd
 
-st.set_page_config(page_title="ARKL Calculator", layout="wide")
+st.set_page_config(page_title="ARKL Intake Calculator", layout="centered")
 
-st.title("📊 Aplikasi Analisis Risiko Kesehatan Lingkungan (ARKL)")
-
-st.markdown("Hitung Intake, Hazard Quotient (HQ), dan Cancer Risk")
+st.title("📊 Perhitungan Asupan (Intake) ARKL")
+st.markdown("Fokus: Non-Karsinogen (HQ) & Karsinogen (Cancer Risk)")
 
 # ======================
-# INPUT UMUM
+# INPUT DASAR
 # ======================
-st.sidebar.header("Input Umum")
+st.sidebar.header("Input Parameter")
 
-C = st.sidebar.number_input("Konsentrasi (C)", value=1.0)
-BW = st.sidebar.number_input("Berat Badan (kg)", value=60.0)
+C = st.sidebar.number_input("Konsentrasi (C) mg/L", value=1.0)
+IR = st.sidebar.number_input("Intake Rate (L/hari)", value=2.0)
 EF = st.sidebar.number_input("Frekuensi Pajanan (hari/tahun)", value=350)
 ED = st.sidebar.number_input("Durasi Pajanan (tahun)", value=30)
-AT = st.sidebar.number_input("Averaging Time (hari)", value=25550)
+BW = st.sidebar.number_input("Berat Badan (kg)", value=60.0)
 
 RfD = st.sidebar.number_input("RfD (mg/kg/hari)", value=0.001)
 CSF = st.sidebar.number_input("Cancer Slope Factor (CSF)", value=0.0)
 
-st.sidebar.markdown("---")
+lifetime = st.sidebar.number_input("Lifetime (tahun, untuk karsinogen)", value=70)
 
 # ======================
-# INGESTION
+# AVERAGING TIME
 # ======================
-st.header("💧 Pajanan Ingestion")
-
-IR_ing = st.number_input("Intake Rate (L/hari)", value=2.0)
-
-intake_ing = (C * IR_ing * EF * ED) / (BW * AT)
+AT_non = ED * 365
+AT_cancer = lifetime * 365
 
 # ======================
-# INHALATION
+# PERHITUNGAN INTAKE
 # ======================
-st.header("🌫️ Pajanan Inhalation")
-
-IR_inh = st.number_input("Inhalation Rate (m3/hari)", value=20.0)
-
-intake_inh = (C * IR_inh * EF * ED) / (BW * AT)
+intake_non = (C * IR * EF * ED) / (BW * AT_non)
+intake_cancer = (C * IR * EF * ED) / (BW * AT_cancer)
 
 # ======================
-# DERMAL
+# RISK
 # ======================
-st.header("🧴 Pajanan Dermal")
-
-SA = st.number_input("Skin Area (cm2)", value=18000.0)
-AF = st.number_input("Adherence Factor", value=0.2)
-ABS = st.number_input("Absorption Factor", value=0.1)
-
-intake_dermal = (C * SA * AF * ABS * EF * ED) / (BW * AT * 10000)
-
-# ======================
-# TOTAL INTAKE
-# ======================
-total_intake = intake_ing + intake_inh + intake_dermal
-
-# ======================
-# HQ & RISK
-# ======================
-HQ = total_intake / RfD if RfD != 0 else 0
-cancer_risk = total_intake * CSF
+HQ = intake_non / RfD if RfD != 0 else 0
+cancer_risk = intake_cancer * CSF
 
 # ======================
 # OUTPUT
 # ======================
 st.header("📈 Hasil Perhitungan")
 
-col1, col2, col3 = st.columns(3)
+st.subheader("Non-Karsinogen")
+st.write(f"Intake: {intake_non:.6f} mg/kg/hari")
+st.write(f"Hazard Quotient (HQ): {HQ:.3f}")
 
-col1.metric("Intake Ingestion", f"{intake_ing:.6f}")
-col2.metric("Intake Inhalation", f"{intake_inh:.6f}")
-col3.metric("Intake Dermal", f"{intake_dermal:.6f}")
+if HQ < 1:
+    st.success("Aman (HQ < 1)")
+else:
+    st.error("Berisiko (HQ > 1)")
 
 st.markdown("---")
 
-st.metric("Total Intake", f"{total_intake:.6f}")
-st.metric("Hazard Quotient (HQ)", f"{HQ:.3f}")
-st.metric("Cancer Risk", f"{cancer_risk:.6e}")
-
-# ======================
-# INTERPRETASI
-# ======================
-st.header("🧾 Interpretasi")
-
-if HQ < 1:
-    st.success("Non-Karsinogen: Aman (HQ < 1)")
-else:
-    st.error("Non-Karsinogen: Berisiko (HQ > 1)")
+st.subheader("Karsinogen")
+st.write(f"Intake: {intake_cancer:.6f} mg/kg/hari")
+st.write(f"Cancer Risk: {cancer_risk:.6e}")
 
 if cancer_risk < 1e-6:
-    st.success("Risiko Kanker: Sangat kecil")
+    st.success("Risiko sangat kecil")
 elif 1e-6 <= cancer_risk <= 1e-4:
-    st.warning("Risiko Kanker: Perlu perhatian")
+    st.warning("Perlu perhatian")
 else:
-    st.error("Risiko Kanker: Tinggi")
+    st.error("Risiko tinggi")
 
 # ======================
-# DATAFRAME OUTPUT
+# CATATAN
 # ======================
-data = {
-    "Jenis Pajanan": ["Ingestion", "Inhalation", "Dermal"],
-    "Intake": [intake_ing, intake_inh, intake_dermal]
-}
-
-df = pd.DataFrame(data)
-
-st.subheader("📊 Breakdown Intake")
-st.dataframe(df)
+st.markdown("---")
+st.info("""
+Catatan penting:
+- Non-karsinogen pakai AT = ED × 365
+- Karsinogen pakai AT = lifetime × 365
+- Gunakan nilai RfD & CSF dari sumber resmi (EPA / WHO)
+""")

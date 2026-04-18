@@ -67,6 +67,40 @@ with tab2:
     st.divider()
     st.metric(label="Hasil Intake Karsinogen", value=f"{intake_kar:.7f} mg/kg-hari")
     st.caption("Gunakan nilai ini untuk dikalikan dengan Slope Factor (Intake * SF = ECR).")
+# ==========================================
+# TAB 3: NILAI RFD/RFC
+# ==========================================
+with tab3:
+# 3. INPUT NILAI AMBANG BATAS (RfD / RfC)
+st.subheader("🔍 Karakteristik Risiko")
+choice = st.radio("Pilih Referensi Ambang Batas:", ["RfD (Oral/Dermal)", "RfC (Inhalasi)"], horizontal=True)
+
+res_col1, res_col2 = st.columns(2)
+with res_col1:
+    if choice == "RfD (Oral/Dermal)":
+        ref_val = st.number_input("Masukkan Nilai RfD (mg/kg-hari)", format="%.5f", value=0.02000)
+    else:
+        ref_val = st.number_input("Masukkan Nilai RfC (mg/m3)", format="%.5f", value=0.02000)
+
+# 4. LOGIKA PERHITUNGAN
+# Intake (Ink)
+avg_t = dt_val * 365
+ink = (c_val * r_val * te_val * fe_val * dt_val) / (wb_val * avg_t) if (wb_val * avg_t) != 0 else 0
+
+# Hazard Quotient (HQ)
+# Jika RfC digunakan, beberapa literatur membandingkan C langsung dengan RfC.
+# Namun secara ARKL Kemenkes, Ink dibandingkan dengan RfD.
+hq = ink / ref_val if ref_val != 0 else 0
+
+# 5. TAMPILAN HASIL
+with res_col2:
+    st.metric(label="Hasil Intake (Ink)", value=f"{ink:.5f} mg/kg-hari")
+    if hq > 1:
+        st.metric(label="Hazard Quotient (HQ)", value=f"{hq:.4f}", delta="TIDAK AMAN", delta_color="inverse")
+        st.error("⚠️ Kesimpulan: Risiko Non-Karsinogenik bersifat Signifikan (HQ > 1).")
+    else:
+        st.metric(label="Hazard Quotient (HQ)", value=f"{hq:.4f}", delta="AMAN")
+        st.success("✅ Kesimpulan: Risiko Non-Karsinogenik tidak signifikan (HQ <= 1).")
 
 # --- FOOTER ---
 st.divider()

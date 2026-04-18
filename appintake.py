@@ -1,9 +1,8 @@
 import streamlit as st
 
 # 1. KONFIGURASI HALAMAN
-st.set_page_config(page_title="Kalkulator ARKL Terpadu", page_icon="🧪", layout="wide")
+st.set_page_config(page_title="ARKL: Intake & Hazard Quotient", page_icon="⚖️", layout="wide")
 
-# CSS untuk memperbaiki tampilan box agar teks terbaca jelas
 st.markdown("""
     <style>
     .stMetric { 
@@ -18,59 +17,24 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🧪 Kalkulator Intake ARKL")
-st.write("Silakan pilih kategori perhitungan di bawah ini:")
+st.title("⚖️ Kalkulator Intake & Risiko (HQ)")
 
-# 2. PEMBUATAN TAB
-tab1, tab2 = st.tabs(["🟢 Non-Karsinogen", "🔴 Karsinogen"])
-
-# --- FUNGSI GLOBAL UNTUK INPUT (Agar Rapih) ---
-def get_inputs(suffix):
+# 2. INPUT PARAMETER UTAMA
+with st.container():
+    st.subheader("📝 Parameter Eksposur")
     col1, col2, col3 = st.columns(3)
     with col1:
-        c = st.number_input("Konsentrasi (C) - mg/m3 atau mg/L", format="%.4f", value=0.0100, key=f"c_{suffix}")
-        r = st.number_input("Laju Asupan (R)", value=0.83, key=f"r_{suffix}")
+        c_val = st.number_input("Konsentrasi (C) - mg/m3 atau mg/L", format="%.4f", value=0.0100)
+        r_val = st.number_input("Laju Asupan (R)", value=0.83, help="Udara default: 0.83 m3/jam. Air default: 2 L/hari.")
     with col2:
-        te = st.number_input("Waktu Paparan (tE) - jam/hari", value=24, key=f"te_{suffix}")
-        fe = st.number_input("Frekuensi (fE) - hari/tahun", value=350, key=f"fe_{suffix}")
+        te_val = st.number_input("Waktu Paparan (tE) - jam/hari", value=24)
+        fe_val = st.number_input("Frekuensi (fE) - hari/tahun", value=350)
     with col3:
-        dt = st.number_input("Durasi (Dt) - tahun", value=30, key=f"dt_{suffix}")
-        wb = st.number_input("Berat Badan (Wb) - kg", value=70.0, key=f"wb_{suffix}")
-    return c, r, te, fe, dt, wb
+        dt_val = st.number_input("Durasi (Dt) - tahun", value=30)
+        wb_val = st.number_input("Berat Badan (Wb) - kg", value=70.0)
 
-# ==========================================
-# TAB 1: NON-KARSINOGEN
-# ==========================================
-with tab1:
-    st.subheader("Perhitungan Intake Non-Karsinogen")
-    c, r, te, fe, dt, wb = get_inputs("non")
-    
-    # Rumus: avgT = Dt * 365
-    avg_t_non = dt * 365
-    intake_non = (c * r * te * fe * dt) / (wb * avg_t_non) if (wb * avg_t_non) != 0 else 0
-    
-    st.divider()
-    st.metric(label="Hasil Intake Non-Karsinogen", value=f"{intake_non:.5f} mg/kg-hari")
-    st.caption("Gunakan nilai ini untuk dibandingkan dengan RfD (Intake / RfD = HQ).")
+st.divider()
 
-# ==========================================
-# TAB 2: KARSINOGEN
-# ==========================================
-with tab2:
-    st.subheader("Perhitungan Intake Karsinogen")
-    c, r, te, fe, dt, wb = get_inputs("kar")
-    
-    # Rumus: avgT = LifeTime (70 tahun * 365 hari = 25.550)
-    life_time = 25550
-    intake_kar = (c * r * te * fe * dt) / (wb * life_time) if (wb * life_time) != 0 else 0
-    
-    st.divider()
-    st.metric(label="Hasil Intake Karsinogen", value=f"{intake_kar:.7f} mg/kg-hari")
-    st.caption("Gunakan nilai ini untuk dikalikan dengan Slope Factor (Intake * SF = ECR).")
-# ==========================================
-# TAB 3: NILAI RFD/RFC
-# ==========================================
-with tab3:
 # 3. INPUT NILAI AMBANG BATAS (RfD / RfC)
 st.subheader("🔍 Karakteristik Risiko")
 choice = st.radio("Pilih Referensi Ambang Batas:", ["RfD (Oral/Dermal)", "RfC (Inhalasi)"], horizontal=True)
@@ -104,9 +68,9 @@ with res_col2:
 
 # --- FOOTER ---
 st.divider()
-st.markdown("""
+st.markdown(f"""
     <div style="text-align: center; color: #666666; font-size: 0.9em;">
-        ⚠️ <i>Aplikasi ini dalam Tahap Pengembangan.</i><br>
+        ⚠️ <i>Aplikasi dalam Tahap Pengembangan.</i><br>
         Hubungi Email: <a href="mailto:muhamaddoni689@gmail.com">muhamaddoni689@gmail.com</a>
     </div>
     """, unsafe_allow_html=True)
